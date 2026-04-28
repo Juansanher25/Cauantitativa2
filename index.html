@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Muestreo - Universidad de América</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX para fórmulas matemáticas de alta calidad -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --univ-blue: #002147;
+            --univ-gold: #C5A059;
+        }
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: #f1f5f9; 
+            color: #1e293b;
+        }
+        .bg-univ-blue { background-color: var(--univ-blue); }
+        .bg-univ-gold { background-color: var(--univ-gold); }
+        .text-univ-blue { color: var(--univ-blue); }
+        .border-univ-gold { border-color: var(--univ-gold); }
+        
+        .math-label {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-weight: 700;
+            color: var(--univ-blue);
+        }
+
+        #formulaDisplay { 
+            font-size: 1.8rem; 
+            min-height: 5rem; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background: #ffffff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .input-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            border-left: 4px solid var(--univ-gold);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        input:focus {
+            border-color: var(--univ-blue) !important;
+            outline: none;
+            ring: 2px;
+            ring-color: var(--univ-blue);
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 2px dashed #cbd5e1;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-12">
+
+    <div class="max-w-5xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden border-b-[12px] border-univ-gold">
+        <!-- Banner Superior -->
+        <header class="bg-univ-blue text-white p-8 text-center relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+            <h2 class="text-sm tracking-[0.3em] font-light mb-2 uppercase opacity-80">Universidad de América</h2>
+            <h1 class="text-3xl md:text-4xl font-bold mb-2">Calculadora de Muestreo Científico</h1>
+            <p class="text-sm italic opacity-70">Ph.D. Juan Sandoval Herrera | Metodología de la Investigación</p>
+        </header>
+
+        <div class="p-6 md:p-12">
+            <!-- Selector de Escenario -->
+            <div class="flex justify-center mb-10 bg-gray-100 p-1.5 rounded-xl max-w-sm mx-auto">
+                <button id="btnInfinita" onclick="switchMode('infinita')" class="flex-1 py-2.5 px-6 rounded-lg font-bold transition-all bg-univ-gold text-white shadow-lg">Población Infinita</button>
+                <button id="btnFinita" onclick="switchMode('finita')" class="flex-1 py-2.5 px-6 rounded-lg font-bold transition-all text-gray-500">Población Finita</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <!-- Entradas de Datos -->
+                <div class="space-y-6">
+                    <div id="fieldN" class="hidden transition-all duration-300">
+                        <div class="input-card">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tamaño del Universo <span class="math-label text-base">($N$)</span></label>
+                            <input type="number" id="inputN" value="500" class="w-full text-xl p-3 border-2 border-gray-100 rounded-lg focus:border-univ-blue bg-gray-50">
+                        </div>
+                    </div>
+
+                    <div class="input-card">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nivel de Confianza <span class="math-label text-base">($Z$)</span></label>
+                        <select id="selectZ" onchange="updateZInput()" class="w-full p-3 border-2 border-gray-100 rounded-lg bg-gray-50 font-semibold mb-3">
+                            <option value="1.645">90% (Z = 1.645)</option>
+                            <option value="1.96" selected>95% (Z = 1.96)</option>
+                            <option value="2.576">99% (Z = 2.576)</option>
+                            <option value="custom">Valor Personalizado</option>
+                        </select>
+                        <input type="number" id="inputZ" value="1.96" step="0.001" class="w-full p-3 border-2 border-gray-100 rounded-lg focus:border-univ-blue bg-gray-50 hidden">
+                    </div>
+
+                    <div class="input-card">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Error / Precisión <span class="math-label text-base">($d$)</span></label>
+                        <div class="relative">
+                            <input type="number" id="inputD" value="5" step="0.1" class="w-full text-xl p-3 border-2 border-gray-100 rounded-lg focus:border-univ-blue bg-gray-50">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="input-card">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Probabilidad <span class="math-label">($p$)</span></label>
+                            <input type="number" id="inputP" value="50" class="w-full p-2 border-2 border-gray-100 rounded bg-gray-50">
+                        </div>
+                        <div class="input-card">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Complemento <span class="math-label">($q$)</span></label>
+                            <input type="number" id="inputQ" value="50" disabled class="w-full p-2 border-2 border-transparent rounded bg-gray-100 text-gray-400 font-bold">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de Resultados -->
+                <div class="flex flex-col space-y-6">
+                    <div class="result-box p-8 rounded-2xl flex flex-col items-center justify-center text-center">
+                        <h3 class="text-univ-blue font-bold text-sm uppercase tracking-[0.2em] mb-4">Tamaño de Muestra Calculado <span class="math-label text-lg">($n$)</span></h3>
+                        <div id="resultN" class="text-8xl font-black text-univ-blue mb-6 drop-shadow-sm">385</div>
+                        <div class="w-16 h-1 bg-univ-gold mb-6 rounded-full"></div>
+                        <p class="text-sm text-gray-500 max-w-xs">Representa el número mínimo de unidades necesarias para garantizar la significancia estadística.</p>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase mb-3 text-center">Estructura Matemática del Modelo</h4>
+                        <div id="formulaDisplay"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Académico -->
+        <footer class="bg-slate-50 p-8 border-t border-gray-100">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center md:text-left">
+                    <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Referencia Crítica</p>
+                    <p class="text-xs text-gray-600 leading-relaxed italic">"El cálculo debe ser a priori. Hacerlo post-hoc carece de valor científico y ético." — Ph.D. Sandoval</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Nivel de Confianza</p>
+                    <div class="flex justify-center space-x-4 text-xs font-bold text-univ-blue">
+                        <span>95% → 1.96</span>
+                        <span>99% → 2.58</span>
+                    </div>
+                </div>
+                <div class="text-center md:text-right">
+                    <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Versión Herramienta</p>
+                    <p class="text-xs font-bold text-univ-gold">Académica Premium 2026</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        let mode = 'infinita';
+
+        function switchMode(newMode) {
+            mode = newMode;
+            const btnInf = document.getElementById('btnInfinita');
+            const btnFin = document.getElementById('btnFinita');
+            const fieldN = document.getElementById('fieldN');
+
+            if (mode === 'infinita') {
+                btnInf.className = 'flex-1 py-2.5 px-6 rounded-lg font-bold transition-all bg-univ-gold text-white shadow-lg';
+                btnFin.className = 'flex-1 py-2.5 px-6 rounded-lg font-bold transition-all text-gray-500 hover:text-gray-700';
+                fieldN.classList.add('hidden');
+            } else {
+                btnFin.className = 'flex-1 py-2.5 px-6 rounded-lg font-bold transition-all bg-univ-gold text-white shadow-lg';
+                btnInf.className = 'flex-1 py-2.5 px-6 rounded-lg font-bold transition-all text-gray-500 hover:text-gray-700';
+                fieldN.classList.remove('hidden');
+            }
+            calculate();
+        }
+
+        function updateZInput() {
+            const select = document.getElementById('selectZ');
+            const input = document.getElementById('inputZ');
+            input.value = select.value === 'custom' ? input.value : select.value;
+            input.className = select.value === 'custom' ? 'w-full p-3 border-2 border-gray-100 rounded-lg bg-gray-50 focus:border-univ-blue mt-2' : 'hidden';
+            calculate();
+        }
+
+        function calculate() {
+            const z = parseFloat(document.getElementById('inputZ').value) || 0;
+            const p = (parseFloat(document.getElementById('inputP').value) / 100) || 0;
+            const q = 1 - p;
+            document.getElementById('inputQ').value = (q * 100).toFixed(0);
+            const d = (parseFloat(document.getElementById('inputD').value) / 100) || 0;
+            
+            const targetEl = document.getElementById('formulaDisplay');
+            if (!targetEl) return;
+
+            let n = 0;
+            let latexFormula = "";
+
+            if (mode === 'infinita') {
+                n = (Math.pow(z, 2) * p * q) / Math.pow(d, 2);
+                latexFormula = "n = \\frac{Z^2 \\cdot p \\cdot q}{d^2}";
+            } else {
+                const N = parseFloat(document.getElementById('inputN').value) || 0;
+                n = (N * Math.pow(z, 2) * p * q) / (Math.pow(d, 2) * (N - 1) + Math.pow(z, 2) * p * q);
+                latexFormula = "n = \\frac{N \\cdot Z^2 \\cdot p \\cdot q}{d^2(N-1) + Z^2pq}";
+            }
+
+            document.getElementById('resultN').innerText = isFinite(n) && n > 0 ? Math.ceil(n) : "---";
+            
+            if (window.katex) {
+                katex.render(latexFormula, targetEl, {
+                    throwOnError: false,
+                    displayMode: true
+                });
+            }
+        }
+
+        // Inicialización y renderizado masivo para etiquetas
+        window.addEventListener('DOMContentLoaded', () => {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
+            });
+            
+            // Listeners para actualización en tiempo real
+            document.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('input', calculate);
+            });
+
+            calculate();
+        });
+    </script>
+</body>
+</html>
